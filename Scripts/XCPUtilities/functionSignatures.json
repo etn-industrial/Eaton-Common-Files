@@ -1,0 +1,13 @@
+{
+"xcpA2L":
+{
+    "inputs":
+    [
+        {"name":"File", "kind":"required", "type":["file=*.a2l"]}
+    ],
+    "outputs":
+    [
+        {"name":"obj", "type":"xcp.A2L"}
+    ]
+}
+}

@@ -1,0 +1,157 @@
+%% 
+%%
+%% Copyright 2012-2018 The MathWorks, Inc.
+%%
+%% Abstract: Performs XCP UDP Configuration.
+
+%implements sxcpipconfig "C"
+%% Function: BlockTypeSetup ==============================================
+
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("sharedxcp/xcpmpl/xcpmaster.h")>
+	%if EXISTS("slrt") && slrt
+		%<LibAddToCommonIncludes("sharedxcp/xcpudptl/udptl.h")>
+		%<LibAddToCommonIncludes("xpctarget.h")>
+		%<LibAddToCommonIncludes("socketfuncs.h")>
+	%else 
+		%exit Code generation error: Code generation for XCP-Over-UDP is only supported in Simulink Real-Time.
+	%endif
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ==============================================
+%%
+%function BlockInstanceSetup(block, system) void
+
+  %assign slaveTag = SFcnParamSettings.SlaveTag
+  %assign tlTag = SFcnParamSettings.TLTag
+  %assign skDLL = STRING(SFcnParamSettings.SKDLL)
+  %assign block = block + slaveTag + tlTag + skDLL
+
+%endfunction %% BlockInstanceSetup
+
+
+%% Function: Start ==========================================================
+%%
+%function Start(block, system) Output
+{
+
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {
+		/* XCP UDP Configuration Block (%<ParamSettings.FunctionName>) - '%<Name>' - Start */
+		int32_T error;
+
+		%<LibBlockPWork(UTLHandle, "", "", 0)> = utlGetHandle("%<SFcnParamSettings.TLTag>");
+        %<LibBlockPWork(XCPHandle, "", "", 1)> = xcpmGetHandle("%<slaveTag>");
+		
+		%assign pInfo = LibBlockParameterAddr(ProtocolInfo, "", "", 0)
+        %assign dInfo = LibBlockParameterAddr(DAQInfo, "", "", 0)
+        %assign eInfo = LibBlockParameterAddr(EventsInfo, "", "", 0)
+        %assign mInfo = LibBlockParameterAddr(MeasurementsInfo, "", "", 0)
+        %assign tInfo = LibBlockParameterAddr(TransportInfo, "", "", 0)
+
+		if (utlInitialize(%<LibBlockPWork(UTLHandle, "", "", 0)>, %<SFcnParamSettings.LocalIPAddress>, %<SFcnParamSettings.LocalPort>, %<SFcnParamSettings.CTRErrDetection>)) {
+            char errMsg[255];
+            utlGetErrorMessage(%<LibBlockPWork(UTLHandle, "", "", 0)>, errMsg, 255);
+            %<RTMSetErrStat("errMsg")>;
+            %<RTMSetStopRequested(1)>;
+        }
+
+        error =  xcpmRegisterSlave(%<LibBlockPWork(XCPHandle, "", "", 1)>,  
+                                    "%<tlTag>", 
+                                    L"%<skDLL>",
+                                    (real_T*)%<pInfo>,
+                                    (real_T*)%<dInfo>,
+                                    (real_T*)%<eInfo>, 
+                                    (real_T*)%<mInfo>,
+                                    TL_UDP, 
+                                    (real_T*)%<tInfo>);
+        if (error!=XCP_ERROR_OK){
+            char errMsg[255] = "Unable to register the slave successfully.";
+            %<RTMSetErrStat("errMsg")>;
+            %<RTMSetStopRequested(1)>;
+            return;          
+        }
+	}
+}
+%endfunction %% Start
+
+
+%% Function: Outputs ==========================================================
+%%
+%function Outputs(block, system) Output
+{
+    /* XCP UDP Configuration Block (%<ParamSettings.FunctionName>) - '%<Name>' - Output */
+
+    int ret;
+    int bytesRecevied;
+	void* xcpHandle = %<LibBlockPWork(XCPHandle, "", "", 1)>;
+    XcpStatus status;
+    status = xcpmGetConnStatus(xcpHandle);
+
+    if (ret = utlExecuteRx(%<LibBlockPWork(UTLHandle, "", "", 0)>, &bytesRecevied)) {
+        static char errMsg[255];
+        if (ret == UTL_ERROR_PROTOCOL_ERROR){
+            ProtocolInfo* pi = utlGetProtocolInterface(%<LibBlockPWork(UTLHandle, "", "", 0)>);
+            if (pi->getErrorMessage != NULL){
+                pi->getErrorMessage(%<LibBlockPWork(UTLHandle, "", "", 0)>, errMsg, 255);
+            }
+        }
+        else{
+            utlGetErrorMessage(%<LibBlockPWork(UTLHandle, "", "", 0)>, errMsg, 255);
+        }
+                
+        %<RTMSetErrStat("errMsg")>;
+        %<RTMSetStopRequested(1)>;
+    }
+
+    if (status == XCP_CONN_START){
+        xcpmConnect(xcpHandle);
+    }
+                               
+    %if (SFcnParamSettings.EnableStatusPort==1)
+        %% Status port exists.
+        %assign pStatus = LibBlockOutputSignal(0,"","",0)
+        if (status == XCP_CONN_DAQ_STARTED){
+            %<pStatus> = 1;
+        }else{
+            %<pStatus> = 0;
+        }
+    %endif
+}
+%endfunction %% Outputs
+
+
+%% Function: Update ==========================================================
+%%
+%function Update(block, system) Output
+
+%endfunction %% Update
+
+
+%% Function: Terminate ==========================================================
+%%
+%function Terminate(block, system) Output
+{
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {  
+
+	    /* XCP UDP Configuration Block (%<ParamSettings.FunctionName>) - '%<Name>' - Terminate */
+    
+        /* Release the transport layer handle. */
+        if (%<LibBlockPWork(UTLHandle, "", "", 0)> != NULL){
+            utlReleaseHandle( %<LibBlockPWork(UTLHandle, "", "", 0)> );
+        }
+
+	    /* Release the XCP handle. */
+		if (%<LibBlockPWork(XCPHandle, "", "", 1)> != NULL){
+            xcpmReleaseHandle( %<LibBlockPWork(XCPHandle, "", "", 1)> );
+		}
+	}    
+}
+%endfunction %% Terminate
+
+%% [EOF] sxcpipconfig.tlc

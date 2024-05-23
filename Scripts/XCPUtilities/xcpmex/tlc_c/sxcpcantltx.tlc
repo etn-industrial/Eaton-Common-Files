@@ -1,0 +1,62 @@
+%% $RCSfile: sxcpcantltx.tlc,v $
+%% Abstract: TLC file XCP CAN Tx Tranport Layer block.
+%%
+%% Copyright 2012 The MathWorks, Inc.
+%% SS 05-01-12
+%% $Revision: 1.1.6.1.6.1 $  $Date: 2013/11/03 22:01:19 $
+
+%implements sxcpcantltx "C"
+
+%% Include required headers.
+%addincludepath "../../../can/canmex/tlc_c"
+%include "can_message.tlc"
+
+%function BlockTypeSetup(block, system) void
+   %<LibAddToCommonIncludes("sharedxcp/xcpcantl/cantl.h")>
+   %<RegisterCANDataType(block)>
+%endfunction
+
+%function BlockInstanceSetup(block, system) void
+    %assign tltag = SFcnParamSettings.TLTag
+    %assign block = block + tltag
+%endfunction
+
+%function Start(block, system) Output 
+{
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {
+        %<LibBlockPWork(CTLHandle, "", "", 0)> = ctlGetHandle("%<tltag>");
+    }
+}
+%endfunction
+
+%function Outputs(block, system) Output
+{
+    int numMsgs = 0;
+    %assign numMsgs = LibBlockOutputSignalWidth(0)
+    %assign canmsg = LibBlockOutputSignalAddr(0,"","",0)
+    real_T* msgCount = (real_T*)%<LibBlockOutputSignalAddr(1, "", "", 0)>;
+    numMsgs = ctlExecuteTx(%<LibBlockPWork(CTLHandle, "", "", 0)>, %<canmsg>, (int)(%<numMsgs>));
+    *msgCount = numMsgs;
+}
+%endfunction
+
+%% Function: Terminate ==========================================================
+%%
+%function Terminate(block, system) Output
+{
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {
+        /* XCP CAN Transport Layer Tx Block (%<ParamSettings.FunctionName>) - '%<Name>' - Terminate */
+    
+        /* Release the transport layer handle. */
+        if (%<LibBlockPWork(CTLHandle, "", "", 0)> != NULL){
+            ctlReleaseHandle( %<LibBlockPWork(CTLHandle, "", "", 0)> );
+        }
+    }
+}
+%endfunction %% Terminate

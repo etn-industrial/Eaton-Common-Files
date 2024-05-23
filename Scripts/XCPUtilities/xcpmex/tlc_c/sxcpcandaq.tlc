@@ -1,0 +1,126 @@
+%% 
+%%
+%% Copyright 2012-2018 The MathWorks, Inc.
+%%
+%% Abstract: Performs XCP DAQ with CAN TL.
+
+%implements sxcpcandaq "C"
+
+%% Function: BlockTypeSetup ==============================================
+%function BlockTypeSetup(block, system) void
+    %<LibAddToCommonIncludes("sharedxcp/xcpmpl/xcpmaster.h")>
+    
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ==============================================
+%%
+%function BlockInstanceSetup(block, system) void
+    
+    %assign slaveTag = SFcnParamSettings.SlaveTag
+    %assign eventID = SFcnParamSettings.EventID
+    %assign DAQPriority = SFcnParamSettings.DAQPriority
+    %assign enableTimestamp = SFcnParamSettings.EnableTimestamp
+    %assign nMeasurements = SFcnParamSettings.NMeasurements
+    %assign measurementsInfo = CAST("Vector", SFcnParamSettings.MeasurementsInfo)
+
+    %assign block = block + slaveTag + eventID + DAQPriority + enableTimestamp + nMeasurements + measurementsInfo
+
+%endfunction %% BlockInstanceSetup
+
+
+%% Function: Start ==========================================================
+%%
+%function Start(block, system) Output
+{
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {
+        /* XCP CAN DAQ Block (%<ParamSettings.FunctionName>) - '%<Name>' - Start */
+        int32_T daqList; 
+        int32_T error;
+        %<LibBlockPWork(PWork, "", "", nMeasurements)> = xcpmGetHandle("%<slaveTag>");
+        daqList = xcpmCreateDaqList(%<LibBlockPWork(PWork, "", "", nMeasurements)>, 
+                                    %<eventID>,
+                                    XCP_DAQ, 
+                                    %<DAQPriority>, 1, %<enableTimestamp>, 0,
+                                    %<nMeasurements>,
+                                    &error);
+        if (daqList < 0){
+            /* DAQ Registration error */ 
+            char errMsg[255] = "Unable to create a DAQ List.";
+            %<RTMSetErrStat("errMsg")>;
+            %<RTMSetStopRequested(1)>;
+            return;              
+        }
+        %<LibBlockIWork(DAQList, "", "", 0)> = daqList;
+
+        /* Add measurement */
+        %foreach idx = nMeasurements
+            %<LibBlockPWork(PWork, "", "", idx)> = 
+                        xcpmAddMeasurement(%<LibBlockPWork(PWork, "", "", nMeasurements)>, 
+                                           daqList, 
+                                           (int32_T)%<measurementsInfo[idx+1]>,
+                                           &error);
+            if (error!=XCP_ERROR_OK){
+                char errMsg[255] = "Unable to add the specified measurements.";
+                %<RTMSetErrStat("errMsg")>;
+                %<RTMSetStopRequested(1)>;
+            }
+        %endforeach
+	}
+}
+%endfunction %% Start
+
+
+%% Function: Outputs ==========================================================
+%%
+%function Outputs(block, system) Output
+{
+    /* XCP CAN DAQ Block (%<ParamSettings.FunctionName>) - '%<Name>' - Output */
+    void* xcpHandle = %<LibBlockPWork(PWork, "", "", nMeasurements)>;
+    int32_T daqList = %<LibBlockIWork(DAQList, "", "", 0)>;
+    real_T  tPhysical = 0;
+    XcpStatus status;
+    status = xcpmGetConnStatus(xcpHandle);
+    if (status==XCP_CONN_DAQ_STARTED){
+        /* Slave configured */
+        %foreach idx = nMeasurements
+            %assign outputAddr = LibBlockOutputSignalAddr(idx,"","",0)
+            %assign dtId  = LibBlockOutputSignalDataTypeId(idx)
+            xcpmReadMeasurement(%<LibBlockPWork(PWork, "", "", idx)>, %<outputAddr>, %<dtId> );
+        %endforeach
+        %if %<enableTimestamp>
+            %assign outputAddr = LibBlockOutputSignalAddr(%<nMeasurements>,"","",0)
+            xcpmReadTimestamp(xcpHandle,daqList,(real_T*)%<outputAddr>);
+        %endif
+    }
+}
+%endfunction %% Outputs
+
+
+%% Function: Update ==========================================================
+%%
+%function Update(block, system) Output
+
+%endfunction %% Update
+
+
+%% Function: Terminate ==========================================================
+%%
+%function Terminate(block, system) Output
+{
+    %if EXISTS("slrt") && slrt
+    if (!xpcIsModelInit())
+    %endif
+    {
+        /* XCP DAQ Block (%<ParamSettings.FunctionName>) - '%<Name>' - Terminate */
+        /* Release the XCP handle. */
+        if (%<LibBlockPWork(PWork, "", "", nMeasurements)> != NULL){
+            xcpmReleaseHandle( %<LibBlockPWork(PWork, "", "", nMeasurements)> );
+        }
+	}    
+}
+%endfunction %% Terminate
+
+%% [EOF] sxcpcandaq.tlc

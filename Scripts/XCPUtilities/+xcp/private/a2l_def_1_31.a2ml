@@ -1,0 +1,479 @@
+/begin A2ML
+       enum Datatype 
+       { "UBYTE", "SBYTE", "UWORD", "SWORD", "ULONG", "SLONG", 
+         "A_UINT64", "A_INT64", "FLOAT32_IEEE", "FLOAT64_IEEE" };
+
+       enum VarNaming { "NUMERIC", "ALPHA" };
+       enum CharacteristicType { "ASCII", "CURVE", "MAP", "CUBOID", "CUBE_4", "CUBE_5", "VAL_BLK", "VALUE" };
+       enum MSB_VERSION { "MSB_FIRST", "MSB_LAST" };
+       enum DEPOSIT_TYPE { "ABSOLUTE", "DIFFERENCE" };
+       enum Indexorder { "INDEX_INCR", "INDEX_DECR" };
+       enum IndexMode { "ALTERNATE_CURVES", "ALTNERATE_WITH_X", "ALTNERATE_WITH_Y", "COLUMN_DIR", "ROW_DIR" };
+       enum Addrtype { "PBYTE", "PWORD", "PLONG", "DIRECT" };
+       enum Monotony { "MON_DECREASE", "MON_INCREASE", "STRICT_DECREASE", "STRICT_INCREASE", "MONOTONOUS", "STRICT_MON", "NO_MON" };
+       enum ConversionType { "IDENTICAL", "FORM", "LINEAR", "RAT_FUNC", "TAB_INTERP", "TAB_NOINTERP", "TAB_VERB" }; 	
+       enum CalibrationAccess { "CALIBRATION", "NO_CALIBRATION", "NOT_IN_MCD_SYSTEM", "OFFLINE_CALIBRATION" };
+       enum MemoryType { "EEPROM", "EPROM", "FLASH", "RAM", "ROM", "REGISTER" };
+       enum PrgType { "CALIBRATION_VARIABLES", "CODE", "DATA", "EXCLUDE_FROM_FLASH", "OFFLINE_DATA", 
+       	    	      "RESERVED", "SERAM", "VARIABLES" };
+       enum MemPrgType { "PRG_CODE", "PRG_DATA", "PRG_RESERVED" };
+
+       enum AttributeType { "INTERN", "EXTERN" };
+
+       struct NO_AXIS_PTS_XYZ45 {
+              uint > Position;
+       	      enum Datatype > DataType;
+       };
+
+       block "UNIT" struct {
+       	     ident > Name;
+	     string > LongID;
+	     string > Display; 
+	     enum   { "DERIVED", "EXTENDED_SI" } > Type;
+       };
+
+       taggedstruct ANNOTATION  {
+       	     "ANNOTATION_LABEL" string;
+	     "ANNOTATION_ORIGIN" string;
+	     block "ANNOTATIONTEXT" struct {
+	     	   string [256] > Text;
+	     };
+       };
+
+	struct AXIS_DESCR {
+       	     enum AXIS_TYPE > Attribute;
+             ident > InputQuantity;
+	     ident > Conversion;
+	     uint > MaxAxisPoints;
+	     float > LowerLimit;
+	     float > UpperLimit;
+	     taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		     "AXIS_PTS_REF" struct { ident > AxisPoints; };
+		     "BYTE_ORDER" enum MSB_VERSION;
+		     "CURVE_AXIS_REF" struct { ident > CurveAxis; };
+		     "DEPOSIT" enum DEPOSIT_TYPE;
+		     "EXTENDED_LIMITS" struct EXTENDED_LIMITS;
+		     "FIX_AXIS_PAR" struct FIX_AXIS_PAR;
+		     "FIX_AXIS_PAR_DIST" struct FIX_AXIS_PAR_DIST;
+		     block "FIX_AXIS_PAR_LIST" (float )*;
+		     "FORMAT" string;
+		     block "FUNCTION_LIST" (ident)*;
+		     "MAX_GRAD" float;
+		     "MONOTONY" enum Monotony;
+		     "PHYS_UNIT" string;
+		     "READ_ONLY";
+		     "STEP_SIZE" float;
+	     };
+	/* FUNCTION_LIST is mentioned in the general structure of the A2L content,
+	   but not in the contents for the AXIS_DESCR. I've decided to add this, as
+	   it won't cause any harm. */
+       }; /* End AXIS_DESCR block */
+
+       block "AXIS_PTS" struct {
+       	      ident > Name;
+	      string > LongID;
+	      ulong > Address;
+	      ident > InputQuantity;
+	      ident > Deposit;
+	      float > MaxDiff;
+	      ident > Conversion;
+	      uint > MaxAxisPoints;
+	      float > LowerLimit;
+	      float > UpperLimit;
+	      taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		     "BYTE_ORDER" enum MSB_VERSION;
+		     "CALIBRATION_ACCESS" enum CalibrationAccess;
+		     "DEPOSIT" enum DEPOSIT_TYPE;
+		     "DISPLAY_IDENTIFIER" struct { ident > DisplayName; };
+		     "ECU_ADDRESS_EXTENSION" int;
+		     "EXTENDED_LIMITS" struct EXTENDED_LIMITS;
+		     "FORMAT" string;
+		     block "FUNCTION_LIST" (ident)*;
+		     "GUARD_RAILS";
+		     "MONOTONY" enum Monotony;
+		     "PHYS_UNIT" string;
+		     "READ_ONLY";
+		     "REF_MEMORY_SEGMENT" ident;
+		     "STEP_SIZE" float;
+		     "SYMBOL_LINK" struct SYMBOL_LINK;
+	      };
+	}; /* End of AXIS_PTS block */
+
+	struct AXIS_PTS_REF {  ident > AxisPoints; };
+	struct AXIS_PTS_XYZ45 { uint > Position; enum Datatype > Datatype;
+	       enum Indexorder > Indexorder; enum Addrtype > AddrType; };
+
+	struct AXIS_RESCALE_X {
+	       uint > Position;
+	       enum Datatype > Datatype;
+	       uint > MaxNumberOfRescalePairs;
+	       enum Indexorder > IndexIncr;
+	       enum Addrtype > Adressing;
+       };
+       struct DIST_OP_XYZ45 { uint > Position; 	       enum Datatype > Datatype; };
+
+
+       enum AXIS_TYPE { "CURVE_AXIS", "COM_AXIS", "FIX_AXIS", "RES_AXIS", "STD_AXIS" };
+
+       taggedstruct BIT_OPERATION {
+       		    "LEFT_SHIFT" uint;
+		    "RIGHT_SHIFT" uint;
+		    "SIGN_EXTEND";
+       };
+
+       struct CALIBRATION_HANDLE {
+           (long > Handle )*;
+	   taggedstruct {
+	       "CALIBRATION_HANDLE_TEXT" string;
+	   };
+       };
+       struct CALIBRATION_METHOD {
+            string > Method;
+	    ulong > Version;
+	    taggedstruct {
+	        block "CALIBRATION_HANDLE" struct CALIBRATION_HANDLE;
+	    };
+       };
+
+       block "CHARACTERISTIC" struct {
+        ident > Name;
+	string > LongID;
+	enum CharacteristicType > Type;
+	ulong > Address;
+	ident > Deposit;
+	float > MaxDiff;
+	ident > Conversion;
+	float > LowerLimit;
+	float > UpperLimit;
+	taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		     (block "AXIS_DESCR" struct AXIS_DESCR )*;
+		     "BIT_MASK" ulong;
+		     "BYTE_ORDER" enum MSB_VERSION;
+		     "CALIBRATION_ACCESS" enum CalibrationAccess;
+		     "COMPARISON_QUANTITY" ident;
+		     "DISPLAY_IDENTIFIER" struct { ident > DisplayName; };
+		     "DISCRETE";
+		     "ECU_ADDRESS_EXTENSION" int;
+		     "EXTENDED_LIMITS" struct EXTENDED_LIMITS;
+		     "FORMAT" string;
+		     block "FUNCTION_LIST" (ident)*;
+		     block "MAP_LIST" (ident)*;
+		     "GUARD_RAILS";
+		     "MATRIX_DIM" struct MATRIX_DIM;
+		     "MAX_REFRESH" struct MAX_REFRESH;
+		     "NUMBER" uint;
+		     "PHYS_UNIT" string;
+		     "READ_ONLY";
+		     "REF_MEMORY_SEGMENT" ident;
+		     "STEP_SIZE" float;
+		     "SYMBOL_LINK" struct SYMBOL_LINK;
+	};
+       }; /* End of CHARACTERISTIC */
+/*
+/begin CHARACTERISTIC
+[-> DEPENDENT_CHARACTERISTIC]
+[-> VIRTUAL_CHARACTERISTIC] 
+/end CHARACTERISTIC
+*/
+	struct COEFFS {
+	       float > a;
+	       float > b;
+	       float > c;
+	       float > d;
+	       float > e;
+	       float > f;
+	};
+	struct COEFFS_LINEAR { float > a; float > b; };
+
+	block "COMPU_METHOD" struct {
+	      ident >  Name;
+	      string > LongID;
+	      enum ConversionType > ConversionType;
+	      string > Format;
+	      string > Unit;
+	      taggedstruct {
+	      	  "COEFFS" struct COEFFS;
+		  "COEFFS_LINEAR" struct COEFFS_LINEAR;
+		  "COMPU_TAB_REF" ident;
+		  "FORMULA" struct FORMULA;
+		  "REF_UNIT" ident;
+		  "STATUS_STRING_REF" ident;
+	      };
+	}; /* End of COMPU_METHOD */
+
+	block "COMPU_TAB" struct {
+	      ident; /* Name */
+	      string; /* LongID */
+	      enum ConversionType; /* ConversionType */
+	      uint;  /*NumberValuePairs */
+	      float; /* InVal */
+	      float; /* > OutVal; */
+	      taggedstruct {
+	          "DEFAULT_VALUE" string;
+		  "DEFAULT_VALUE_NUMERIC" float;
+   	      };
+        }; /* End of COMPU_VTAB */
+
+	block "COMPU_VTAB" struct {
+	      ident; /* Name */
+	      string; /* LongID */
+	      enum ConversionType; /* ConversionType */
+	      uint;  /*NumberValuePairs */
+	      float; /* InVal */
+	      string; /* > OutVal; */
+	      taggedstruct {
+	          "DEFAULT_VALUE" string;
+   	      };
+        }; /* End of COMPU_VTAB */
+
+	block "COMPU_VTAB_RANGE" struct {
+	      ident; /* Name */
+	      string; /* LongID */
+	      uint;  /*NumberValuePairs */
+	      float; /* InValMin */
+	      float; /* InValMax */
+	      string; /* > OutVal; */
+	      taggedstruct {
+	          "DEFAULT_VALUE" string;
+   	      };
+        }; /* End of COMPU_VTAB_RANGE */
+
+       struct DATA_SIZE { uint > Size; };
+
+       struct EXTENDED_LIMITS { float > LowerLimit; float > UpperLimit; };
+
+       struct FIX_AXIS_PAR { float > Offset; float > Shift; uint > Numberapo; };
+       struct FIX_AXIS_PAR_DIST { float > Offset; float > Distance; uint > Numberapo; };
+
+       struct FNC_VALUES {
+       	      uint >Position;
+	      enum Datatype > Datatype;
+	      enum IndexMode > IndexMode;
+	      enum Addrtype > Addresstype;
+       };
+
+       struct FORMULA {
+       	      string > Fx;
+	      taggedstruct {
+	          "FORMULA_INV" string;
+ 	      };
+       };
+       block "FUNCTION" struct {
+       	     ident > Name;
+	     string > LongID;
+	     taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		      block "DEF_CHARACTERISTIC" (ident)*;
+		      block "REF_CHARACTERISTIC" (ident)*;
+		      "FUNCTION_VERSION" string;
+		      block "IN_MEASUREMENT" (ident)*;
+		      block "LOC_MEASUREMENT" (ident)*;
+		      block "OUT_MEASUREMENT" (ident)*;
+		      block "SUB_FUNCTION" (ident)*;
+	     };
+	}; /* End of FUNCTION */
+
+
+	block "GROUP" struct {
+	       ident > GroupName;
+	       string > GroupLongIdentifier;
+	       taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		      block "FUNCTION_LIST" (ident)*;
+		      block "REF_CHARACTERISTIC" (ident)*;
+		      block "REF_MEASUREMENT" (ident)*;
+		      block "SUB_GROUP" (ident)*;
+		      "ROOT";
+	       };
+	};  /* end GROUP */
+
+	struct IDENTIFICATION {
+	       uint > Position;
+	       enum Datatype > Datatype;
+        };
+	
+	struct MATRIX_DIM { uint > xDim; uint > yDim; uint > zDim; };
+
+       struct MAX_REFRESH { uint > ScalingUnit; ulong > Rate; };
+
+       block "MEASUREMENT" struct {
+       	     ident > Name;
+	     string > LongID;
+	     enum Datatype > DataType;
+	     ident > Conversion;
+	     uint > Resolution;
+	     float > Accuracy;
+	     float > LowerLimit;
+	     float > UpperLimit;
+	     taggedstruct {
+		     (block "ANNOTATION" taggedstruct ANNOTATION )*;
+		     "ARRAY_SIZE" uint;
+		     "BIT_MASK" ulong;
+		     block "BIT_OPERATION" taggedstruct BIT_OPERATION;
+		     "BYTE_ORDER" enum MSB_VERSION;
+		     "DISCRETE";
+		     "DISPLAY_IDENTIFIER" struct { ident > DisplayName; };
+		     "ERROR_MASK" struct { uint64 > Mask; };
+		     "ECU_ADDRESS" ulong;
+		     "ECU_ADDRESS_EXTENSION" int;
+		     "FORMAT" string;
+		     block "FUNCTION_LIST" (ident)*;
+		     "LAYOUT" enum IndexMode;
+		     "MATRIX_DIM" struct MATRIX_DIM;
+		     "MAX_REFRESH" struct MAX_REFRESH;
+		     "PHYS_UNIT" string;
+		     "READ_WRITE";
+		     "REF_MEMORY_SEGMENT" ident;
+		     "SYMBOL_LINK" struct SYMBOL_LINK;
+		     block "VIRTUAL" (ident)*;
+	     };
+	}; /* End of block MEASUREMENT */
+
+	struct MEMORY_LAYOUT {
+	       enum MemPrgType > PrgType;
+	       ulong > Address;
+	       ulong > Size;
+	       long[5] > Offset;
+	};
+	       
+	struct MEMORY_SEGMENT {
+	       ident > Name;
+	       string > LongID;
+	       enum PrgType > PrgType;
+	       enum MemoryType >  MemoryType;
+	       enum AttributeType > Attribute;
+	       ulong > Address;
+	       ulong > Size;
+	       long[5] > Offset;
+       };	
+
+       block "MOD_COMMON" struct {
+       	     string > Comment;
+	     taggedstruct {
+	            "ALIGNMENT_BYTE" uint;
+		    "ALIGNMENT_FLOAT32_IEEE" uint;
+       		    "ALIGNMENT_FLOAT64_IEEE" uint;
+       		    "ALIGNMENT_INT64" uint;
+       		    "ALIGNMENT_LONG" uint;
+       		    "ALIGNMENT_WORD" uint;
+		    "BYTE_ORDER" enum MSB_VERSION;
+		    "DATA_SIZE" struct DATA_SIZE;
+		    "DEPOSIT" enum DEPOSIT_TYPE;
+	     };	    
+       };
+
+       block "MOD_PAR" struct {
+       	     string > Comment;
+	     taggedstruct {
+	          ("ADDR_EPK" ulong )*;
+		  (block "CALIBRATION_METHOD" struct CALIBRATION_METHOD)*;
+		  "CPU_TYPE" string;
+	          "CUSTOMER" string;
+	          "CUSTOMER_NO" string;
+	          "ECU" string;
+		  "ECU_CALIBRATION_OFFSET" long;
+		  "EPK" string;
+		  (block "MEMORY_LAYOUT" struct MEMORY_LAYOUT )*;
+		  "NO_OF_INTERFACES" uint;
+		  (block "MEMORY_SEGMENT" struct MEMORY_SEGMENT)*;
+		  "PHONE_NO" string;
+		  "SUPPLIER" string;
+		  ("SYSTEM_CONSTANT" struct { string > Name; string > Value; })*;
+		  "USER" string;
+		  "VERSION" string;
+	     };
+    }; /* end of block  MOD_PAR */
+
+       block "RECORD_LAYOUT" struct {
+       	     ident > Name ; 
+	     taggedstruct {
+	             "ADDR_EPK" ulong;
+	     	     "ALIGNMENT_BYTE" uint;
+	     	     "ALIGNMENT_FLOAT32_IEEE" uint;
+	     	     "ALIGNMENT_FLOAT64_IEEE" uint;
+	     	     "ALIGNMENT_INT64" uint;
+	     	     "ALIGNMENT_LONG" uint;
+	     	     "ALIGNMENT_WORD" uint;
+		     "AXIS_PTS_X" struct AXIS_PTS_XYZ45;
+		     "AXIS_PTS_Y" struct AXIS_PTS_XYZ45;
+		     "AXIS_PTS_Z" struct AXIS_PTS_XYZ45;
+		     "AXIS_PTS_4" struct AXIS_PTS_XYZ45;
+		     "AXIS_PTS_5" struct AXIS_PTS_XYZ45;
+
+		     "AXIS_RESCALE_X" struct AXIS_RESCALE_X;
+
+		     "DIST_OP_X" struct DIST_OP_XYZ45;
+		     "DIST_OP_Y" struct DIST_OP_XYZ45;
+		     "DIST_OP_Z" struct DIST_OP_XYZ45;
+		     "DIST_OP_4" struct DIST_OP_XYZ45;
+		     "DIST_OP_5" struct DIST_OP_XYZ45;
+		     
+		     "FIX_NO_AXIS_PTS_X" uint;
+		     "FIX_NO_AXIS_PTS_Y" uint;
+		     "FIX_NO_AXIS_PTS_Z" uint;
+		     "FIX_NO_AXIS_PTS_4" uint;
+		     "FIX_NO_AXIS_PTS_5" uint;
+
+		 "FNC_VALUES" struct FNC_VALUES;
+		 
+		 "IDENTIFICATION" struct IDENTIFICATION;
+		 "NO_RESCALE_X" struct IDENTIFICATION; /* Same content */
+	         "NO_AXIS_PTS_X" struct NO_AXIS_PTS_XYZ45;
+	         "NO_AXIS_PTS_Y" struct NO_AXIS_PTS_XYZ45;
+	         "NO_AXIS_PTS_Z" struct NO_AXIS_PTS_XYZ45;
+	         "NO_AXIS_PTS_4" struct NO_AXIS_PTS_XYZ45;
+	         "NO_AXIS_PTS_5" struct NO_AXIS_PTS_XYZ45;
+
+		 "OFFSET_X" struct IDENTIFICATION; /* Same content */
+		 "OFFSET_Y" struct IDENTIFICATION; /* Same content */
+		 "OFFSET_Z" struct IDENTIFICATION; /* Same content */
+		 "OFFSET_4" struct IDENTIFICATION; /* Same content */
+		 "OFFSET_5" struct IDENTIFICATION; /* Same content */
+
+		 ("RESERVED" struct IDENTIFICATION )*; /* Same content */
+
+		 "RIP_ADDR_W" struct IDENTIFICATION; /* Same content */
+		 "RIP_ADDR_X" struct IDENTIFICATION; /* Same content */
+		 "RIP_ADDR_Y" struct IDENTIFICATION; /* Same content */
+		 "RIP_ADDR_Z" struct IDENTIFICATION; /* Same content */
+		 "RIP_ADDR_4" struct IDENTIFICATION; /* Same content */
+		 "RIP_ADDR_5" struct IDENTIFICATION; /* Same content */
+
+		 "SRC_ADDR_X" struct IDENTIFICATION; /* Same content */
+		 "SRC_ADDR_Y" struct IDENTIFICATION; /* Same content */
+		 "SRC_ADDR_Z" struct IDENTIFICATION; /* Same content */
+		 "SRC_ADDR_4" struct IDENTIFICATION; /* Same content */
+		 "SRC_ADDR_5" struct IDENTIFICATION; /* Same content */
+
+		 "SHIFT_OP_X" struct IDENTIFICATION; /* Same content */
+		 "SHIFT_OP_Y" struct IDENTIFICATION; /* Same content */
+		 "SHIFT_OP_Z" struct IDENTIFICATION; /* Same content */
+		 "SHIFT_OP_4" struct IDENTIFICATION; /* Same content */
+		 "SHIFT_OP_5" struct IDENTIFICATION; /* Same content */
+
+		 "STATIC_RECORD_LAYOUT";
+	     };
+       }; /* End RECORD_LAYOUT */
+
+     struct SYMBOL_LINK { string > SymbolName; long > Offset; };
+
+     block "VARIANT_CODING" struct {
+     	   taggedstruct {
+		"VAR_NAMING" enum VarNaming;
+		"VAR_SEPARATOR" string;
+	   };
+/*
+	   	"VAR_CHARACTERISTIC";
+		"VAR_CRITERION" struct VAR_CRITERION;
+		"VAR_FORBIDDEN_COMB";
+*/
+     }  /* VARIANT_CODING */;
+
+     struct VAR_CRITERION {
+     	    
+     };
+
+/end A2ML

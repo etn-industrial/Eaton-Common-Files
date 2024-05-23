@@ -1,0 +1,698 @@
+    /begin A2ML 
+ 
+      block "IF_DATA" taggedunion if_data { 
+ 
+ 
+        "CANAPE_EXT" struct { 
+          int;             /* version number */ 
+          taggedstruct { 
+            "LINK_MAP" struct { 
+              char[256];   /* segment name */ 
+              long;        /* base address of the segment */ 
+              uint;        /* address extension of the segment */ 
+              uint;        /* flag: address is relative to DS */ 
+              long;        /* offset of the segment address */ 
+              uint;        /* datatypValid */ 
+              uint;        /* enum datatyp */ 
+              uint;        /* bit offset of the segment */ 
+            }; 
+            "DISPLAY" struct { 
+              long;        /* display color */ 
+              double;      /* minimal display value (phys)*/ 
+              double;      /* maximal display value (phys)*/ 
+            }; 
+            "VIRTUAL_CONVERSION" struct { 
+              char[256];   /* name of the conversion formula */ 
+            }; 
+          }; 
+        }; 
+        "CANAPE_INI" taggedstruct { 
+          block "TP_BLOB" taggedstruct { 
+            ("PARAMETER" struct { 
+                char[50];     /* Kategorie */ 
+                char[50];     /* Name des Parameters */ 
+                char[256];    /* Wert des Parameters */ 
+            })*; 
+          }; 
+        }; 
+ 
+        /*********************************************************/ 
+        /*   CCP AML   Blob-Version  V2.4, 27.04.1999            */ 
+        /*********************************************************/ 
+        "ASAP1B_CCP" taggedstruct { 
+            /* Description of the DAQ-Lists */ 
+            (block "SOURCE" struct { 
+              struct { 
+                char [101];   /* Name of the DAQ-List (data acquisition list), 
+                                 measurement source .        */ 
+                              /* If the DAQ-Liste only supports one fixed ECU 
+                                 sampling rate, it can be declared below 
+                                 to achieve compatibility with the ASAP2 standard. 
+                                 Otherwise description of the possible ECU 
+                                 sampling rates in QP_BLOB      */ 
+                int;          /* Period definition : Basic scaling unit in 
+                                 CSE defined in ASAP1b (CSE=Code for Scaling Unit) */ 
+                long;         /* Period definition : Rate in Scaling Units */ 
+              }; 
+              taggedstruct { 
+                "DISPLAY_IDENTIFIER" char[32]; 
+                block "QP_BLOB" struct { 
+                  uint;	               /* Number of the DAQ-List 0..n               */ 
+                  taggedstruct { 
+                    "LENGTH" uint;     /* Length of the DAQ-Liste, maximum number of 
+                                          the useable ODTs                          */ 
+                    "CAN_ID_VARIABLE"; /* CAN-Message-ID is variable                */ 
+                    "CAN_ID_FIXED" ulong; 
+                                       /* CAN-Message-ID of the DTOs is fixed, 
+                                          Default DTO 
+                                          Bit31 = 1: extended Identifier 
+                                          Bit31 = 0: standard Identifier            */ 
+                                       /* Not applied if the ECU uses the DTM-Id    */ 
+                    ("RASTER" uchar )*; 
+                                       /* Supported CCP Event Channel Names 
+                                          of this DAQ List */ 
+                    ("EXCLUSIVE" int )*; 
+                                       /* Exclusion of other DAQ-Lists              */ 
+                    "REDUCTION_ALLOWED"; 
+                                       /* Data reduction possible                   */ 
+                    "FIRST_PID" uchar; /* First Packet ID (PID) of the DAQ List     */ 
+                  }; 
+                }; 
+              }; 
+            } )*; 
+            /* Description of the available ECU Sampling Rates (Event Channels)      */ 
+            (block "RASTER" struct { 
+               char [101];   /* CCP Event Channel Name                               */ 
+               char [9];     /* Short Display Name of the Event Channel Name         */ 
+               uchar;        /* Event Channel No., used for CCP START_STOP)          */ 
+               int;          /* Period definition :  basic scaling unit in CSE 
+                                as defined in ASAP1b                                 */ 
+               long;         /* ECU sample rate of the event channel, 
+                                period definition based on the basic scaling unit    */ 
+               taggedstruct { 
+                 ("EXCLUSIVE" uchar )*; 
+                             /* Exclusion of other CCP Event Channels                */ 
+               }; 
+            })*; 
+            /* Group several event channels to form one combined event */ 
+            /* e.g. group all cylinder synchronous events to one combined element */ 
+            (block "EVENT_GROUP" struct { 
+               char [101];   /* Event group name */ 
+               char [9];     /* Short name for the event group */ 
+               taggedstruct { 
+                 ("RASTER" uchar )*; 
+               }; 
+                             /* all event channels beloging to group 
+                                (CCP Event Channel Numbers for START_STOP)               */ 
+            })*; 
+            /* Description of the authentification process */ 
+            block "SEED_KEY" struct { 
+               char[256];    /* Name of the Seed&Key DLL for CAL Priviledge, 
+                                including file-Extension without path */ 
+               char[256];    /* Name of the Seed&Key DLL for DAQ Priviledge, 
+                                including file-Extension without path */ 
+               char[256];    /* Name of the Seed&Key DLL for PGM Priviledge, 
+                                including file-Extension without path */ 
+            }; 
+            /* Description of the checksum calculation process */ 
+            block "CHECKSUM" struct { 
+               char[256];    /* Name of the Checksum DLL representing the ECU Algorithm, 
+                                including file-Extension without path */ 
+            }; 
+            block "TP_BLOB" struct { 
+               uint;	  /* CCP Version,       High Byte: Version 
+                                             Low Byte : subversion (dec.)            */ 
+               uint;	  /* Blob-Version,      High Byte: Version 
+                                             Low Byte : subversion (dec.)            */ 
+               ulong;	  /* CAN-Message ID for 'Transmitting to ECU (CRM)' 
+                                             Bit31 = 1: extended Identifier 
+                                             Bit31 = 0: standard Identifier          */ 
+               ulong;	  /* CAN-Message ID for 'Receiving from ECU (DTM)' 
+                                             Bit31 = 1: extended Identifier 
+                                             Bit31 = 0: standard Identifier          */ 
+               uint;	  /* Logical CCP-Address of the (station address)           */ 
+               uint;	  /* Byte order of Multiple-byte-items 
+                                             1 = high Byte first, 2 = low byte first */ 
+               taggedstruct { 
+                 block "CAN_PARAM" struct { 
+                   uint;                  /* Quartz freq. of the elec. control unit  */ 
+                   uchar;                 /* BTR0                                    */ 
+                   uchar;                 /* BTR1                                    */ 
+                 }; 
+                 "BAUDRATE" ulong;        /* Baud rate in Hz.                        */ 
+                 "SAMPLE_POINT" uchar;    /* sampling point of time in percent       */ 
+                 "SAMPLE_RATE" uchar;     /* number of samples per Bit (1 oder 3)    */ 
+                 "BTL_CYCLES" uchar;      /* number of BTL-cycles                    */ 
+                 "SJW" uchar;             /* SJW-parameter in BTL-cycles             */ 
+                 "SYNC_EDGE" enum { 
+                    "SINGLE" = 0,         /* Synchronisation only on fallende edge   */ 
+                    "DUAL" = 1            /* Synchr. on falling and rising edge      */ 
+                 }; 
+                 "DAQ_MODE" enum {        /* mode of cylcic data acquisition         */ 
+                    "ALTERNATING" = 0,    /* ECU is sending one ODT per cycle        */ 
+                    "BURST" = 1           /* ECU is sending a complete DAQ           */ 
+                 }; 
+                 "BYTES_ONLY";            /* ECU supports max. elements of one Byte size */ 
+                                          /* otherwise ECU supports different dataTypes  */ 
+                 "RESUME_SUPPORTED";      /* ECU supports the Resume function            */ 
+                 "STORE_SUPPORTED";       /* ECU supports the Store function             */ 
+                 "CONSISTENCY" enum { 
+                    "DAQ" = 0,            /* consistency of a complete DAQ ist guaranteed */ 
+                    "ODT" = 1             /* consistency of a complete ODT ist guaranteed */ 
+                 }; 
+                 "ADDRESS_EXTENSION" enum {  /* address extension                      */ 
+                    "DAQ" = 0,               /* ECU supports only one Address extension 
+                                                within an DAQ                    */ 
+                    "ODT" = 1                /* ECU supports only one Address extension 
+                                                within an ODT                    */ 
+                 }; 
+                 block "CHECKSUM_PARAM" struct { 
+                   uint;	           /* checksum calculation procedure 
+                                        standard types not yet defined, 
+                                        if greater of equal 1000 : manufacturer specific  */ 
+                   ulong;               /* Maximum block length used by an ASAP1a-CCP 
+                                           command, for checksum calculation procedure  */ 
+                   taggedstruct { 
+                     "CHECKSUM_CALCULATION" enum { 
+                        "ACTIVE_PAGE" = 0, 
+                        "BIT_OR_WITH_OPT_PAGE" = 1 
+                     }; 
+                   }; 
+                 }; 
+                 (block "DEFINED_PAGES" struct { 
+                    struct { 
+                       uint;            /* Logical No. of the memory page (1,2,..)   */ 
+                       char[101];       /* Name of the memory page                   */ 
+                       uint;            /* Adress-Extension of the memory page (only 
+                                           Low Byte significant)                     */ 
+                       ulong;           /* Base address of the memory page           */ 
+                       ulong;           /* Length of the memory page in Bytes        */ 
+                    }; 
+                    taggedstruct { 
+                      "RAM";              /* memory page in RAM */ 
+                      "ROM";              /* memory page in ROM */ 
+                      "FLASH";            /* memory page in FLASH */ 
+                      "EEPROM";           /* memory page in EEPROM */ 
+                      "RAM_INIT_BY_ECU";  /* memory page is initialised by ECU start-up */ 
+                      "RAM_INIT_BY_TOOL"; /* RAM- memory page is initialised by the MCS */ 
+                      "AUTO_FLASH_BACK";  /* RAM memory page is automatically flashed back */ 
+                      "FLASH_BACK";       /* feature available to flash back the RAM memory page */ 
+                      "DEFAULT";          /* memory page is standard (fallback mode) */ 
+                    }; 
+                 } ) *; 
+                 ( "OPTIONAL_CMD"  uint )*; /* CCP-Code of the optional command available 
+                                               in the ECU. It is recommended to declare all 
+                                               non-standard ECU commands here */ 
+               }; 
+            }; 
+            /* for CHARACTERISTIC and AXIS_PTS and MEMORY_LAYOUT */ 
+            "DP_BLOB" struct { 
+               uint;	/* Address extension of the calibration data 
+                           (only Low Byte significant) */ 
+               ulong;	/* Base address of the calibration data */ 
+               ulong;	/* Number of Bytes belonging to the calibration data  */ 
+            }; 
+            /* for MEASUREMENT */ 
+            "KP_BLOB" struct { 
+               uint;	/* Address extension of the online data 
+                            (only Low Byte significant) */ 
+               ulong;	/* Base address of the online data   */ 
+               ulong;	/* Number of Bytes belonging to the online data (1,2 or 4) */ 
+               taggedstruct { 
+                  ("RASTER" uchar )*; 
+                         /* Array of event channel initialization values */ 
+               }; 
+            }; 
+/* Don't know the exact definition of this one.
+	    struct "DIM" {
+	    	   long > Address;
+		   enum MemType > AttributeType;
+		   enum AddrType > AddrType;
+            };
+*/
+        }; 
+ 
+        /*********************************************************/ 
+        /*   ASAP1B_KWP2000    BlobVersion 1.01                  */ 
+        /*********************************************************/ 
+        "ASAP1B_KWP2000" taggedstruct { 
+          ("ADDR_MAPPING" struct { 
+            ulong; 
+            ulong; 
+            ulong; 
+          })*; 
+          ("SEED_KEY" char[256])*; 
+          (block "SOURCE" struct { 
+            struct { 
+              char[100]; 
+              int; 
+              long; 
+            }; 
+            taggedstruct { 
+              "QP_BLOB" struct { 
+                uint; 
+                enum { 
+                  "ADDRESSMODE" = 1, 
+                  "BLOCKMODE" = 2 
+                }; 
+                uint; 
+                uint; 
+                uint; 
+              }; 
+            }; 
+          })*; 
+          block "TP_BLOB" struct { 
+            uint; 
+            uint; 
+            uint; 
+            enum { 
+              "WuP" = 1, 
+              "5Baud" = 2 
+            }; 
+            enum { 
+              "MSB_FIRST" = 1, 
+              "MSB_LAST" = 2 
+            }; 
+            uint; 
+            taggedstruct { 
+              "DATA_ACCESS" struct { 
+                ulong; 
+                ulong; 
+                uint; 
+                uint; 
+                uint; 
+                uint; 
+              }; 
+              block "CHECKSUM" struct { 
+                ulong; 
+                uint; 
+                uint; 
+                enum { 
+                  "RequestRoutineResults" = 0, 
+                  "StartRoutine" = 1, 
+                  "CodedResult" = 2 
+                }; 
+                taggedstruct { 
+                  "RNC_RESULT" (uchar )*; 
+                }; 
+              }; 
+              block "FLASH_COPY" struct { 
+                enum { 
+                  "NOFLASHBACK" = 0x00, 
+                  "AUTOFLASHBACK" = 0x40, 
+                  "TOOLFLASHBACK" = 0x80 
+                }; 
+                uint; 
+                enum { 
+                  "RequestRoutineResults" = 0, 
+                  "StartRoutine" = 1, 
+                  "CodedResult" = 2 
+                }; 
+                enum { 
+                  "RAM_InitByECU" = 0x10, 
+                  "RAM_InitByTool" = 0x20 
+                }; 
+                uint; 
+                taggedstruct { 
+                  "COPY_FRAME" (uchar )*; 
+                  "RNC_RESULT" (uchar )*; 
+                  "COPY_PARA" (uchar )*; 
+                }; 
+              }; 
+              (block "DIAG_BAUD" struct { 
+                ulong; 
+                uint; 
+                taggedstruct { 
+                  "BD_PARA" (uchar)*; 
+                }; 
+              })*; 
+              ("TIME_DEF" struct { 
+                uint; 
+                uint; 
+                uint; 
+                uint; 
+                uint; 
+                uint; 
+              })*; 
+              ("SECURITY_ACCESS" struct { 
+                uint; 
+                uint; 
+                uint; 
+              })*; 
+              block "PAGE_SWITCH" struct { 
+                enum { 
+                  "ESCAPE_CODE"   = 0x80, 
+                  "LOCAL_ROUTINE" = 0x31 
+                }; 
+                taggedstruct { 
+                  "ESCAPE_CODE_PARA"  ( uchar )*; 
+                  block "ROUTINE_PARA" struct { 
+                    uint; 
+                    enum { 
+                      "RequestRoutineResults"	= 0, 
+                      "StartRoutine"		= 1, 
+                      "CodedResult"		= 2 
+                    }; 
+                    taggedstruct { 
+                      "RNC_RESULT" ( uchar )*; 
+                    }; 
+                  }; 
+                  "PAGE_CODE" ( uchar )*; 
+                }; 
+              }; 
+            }; 
+          }; 
+          "DP_BLOB" struct { 
+            ulong; 
+            ulong; 
+          }; 
+          "KP_BLOB" struct { 
+            ulong; 
+            enum { 
+              "INTERN" = 0, 
+              "EXTERN" = 1 
+            }; 
+            uint; 
+          }; 
+        }; 
+ 
+        /*********************************************************/ 
+        /*   CNP_KWPONCAN                                        */ 
+        /*********************************************************/ 
+        "CNP_KWPONCAN" taggedstruct { 
+          block "TP_BLOB" taggedstruct { 
+            block "KWP" struct { 
+              ulong;     /* size (blob version 331) */ 
+              ulong;     /* BlockDelay              */ 
+              ulong;     /* MaxBlock                */ 
+              ulong;     /* Timeout                 */ 
+              ulong;     /* ExtTimeout              */ 
+              ulong;     /* DelayTesterPresent      */ 
+              long;      /* SecurityAccess          */ 
+              char[260]; /* SeedKey                 */ 
+              uchar;     /* SeedKeyDiagnosticMode   */ 
+              uchar;     /* DynamicallyDefLocalId   */ 
+              uchar;     /* ReadIdOption            */ 
+              uchar;     /* ReadIdResultOffset      */ 
+              uchar;     /* ReadIdResultSize        */ 
+              uchar;     /* ExtendedMode            */ 
+              ulong;     /* RxId                    */ 
+              ulong;     /* TxId                    */ 
+              long;      /* BodyCan                 */ 
+              ulong;     /* GlbTxId                 */ 
+              uchar;     /* TargetAddr              */ 
+              uchar;     /* TesterAddr              */ 
+              ulong;     /* BaseAddr                */ 
+              long;      /* DelayAutoDisconnect     */ 
+              long;      /* ZeroPadding             */ 
+              ulong;     /* CyclicTesterPresent     */ 
+              uchar;     /* ModeConnect             */ 
+              uchar;     /* ModeDisconnect          */ 
+              uchar;     /* ModeCalibration         */ 
+            }; 
+            block "DLL" struct { 
+              ulong;     /* size (blob version 7) */ 
+              uchar;     /* CalramOffline         */ 
+              uchar;     /* CalramCache           */ 
+              uchar;     /* CalramWriteOpt        */ 
+              taggedstruct { 
+                ("CAL_RAM" struct { 
+                  ulong;  /* CalramSectorAddr */ 
+                  ulong;})*;  /* CalramSectorSize */ 
+              }; 
+            }; 
+            block "CAN" struct { 
+              ulong;     /* size (blob version 282) */ 
+              ulong;     /* CHANNEL                 */ 
+              uchar;     /* BTR0                    */ 
+              uchar;     /* BTR1                    */ 
+              ulong;     /* RX_QUEUE_SIZE           */ 
+              char[256]; /* HOST                    */ 
+              long;      /* PORT                    */ 
+              long;      /* PROTOCOL_TYPE           */ 
+              long;      /* SOCKET_TYPE             */ 
+            }; 
+          }; 
+          "DP_BLOB" struct { 
+              ulong;     /* size (blob version 6)       */ 
+              uint;	    /* Address extension of the calibration data */ 
+                         /* (only Low Byte significant) */ 
+          }; 
+          "KP_BLOB" struct { 
+              ulong;     /* size (blob version 6)       */ 
+              uint;	    /* Address extension of the calibration data */ 
+                         /* (only Low Byte significant) */ 
+          }; 
+        }; 
+ 
+        /*********************************************************/ 
+        /*   ETK               BlobVersion 1.01                  */ 
+        /*********************************************************/ 
+        "ETK" taggedstruct { 
+          ("ADDR_MAPPING" struct { 
+            ulong; 
+            ulong; 
+            ulong; 
+          })*; 
+          (block "SOURCE" struct { 
+            struct { 
+              char[100]; 
+              int; 
+              long; 
+            }; 
+            taggedstruct { 
+              "QP_BLOB" struct { 
+                uint; 
+                uint; 
+                ulong; 
+                ulong; 
+                ulong; 
+                uint; 
+                uint; 
+                ulong; 
+              }; 
+            }; 
+          })*; 
+          block "TP_BLOB" struct { 
+            ulong; 
+            ulong; 
+            ulong; 
+            taggedstruct { 
+              block "DISTAB_CFG" struct { 
+                uint; 
+                uint; 
+                uint; 
+                ulong; 
+                ulong; 
+                taggedstruct { 
+                  "TRG_MOD" ( uchar )*; 
+                }; 
+              }; 
+              "CODE_CHK" struct { 
+                ulong; 
+                uint; 
+                ulong; 
+                uint; 
+              }; 
+              "ETK_CFG" ( uchar )*; 
+              ("EMU_DATA" struct { 
+                ulong; 
+                ulong; 
+                enum { 
+                  "INTERN"  = 0, 
+                  "EXTERN"  = 1 
+                }; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+              })*; 
+              ("EMU_CODE" struct { 
+                ulong; 
+                ulong; 
+                enum { 
+                  "INTERN"  = 0, 
+                  "EXTERN"  = 1 
+                }; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+              })*; 
+              ("EMU_RAM" struct { 
+                ulong; 
+                ulong; 
+                enum { 
+                  "INTERN"  = 0, 
+                  "EXTERN"  = 1 
+                }; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+              })*; 
+              ("RESERVED" struct { 
+                ulong; 
+                ulong; 
+                enum { 
+                  "INTERN"  = 0, 
+                  "EXTERN"  = 1 
+                }; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+                ulong; 
+              })*; 
+              "ETK_MAILBOX" struct { 
+                ulong; 
+                enum { 
+                  "CODE" = 1, 
+                  "DATA" = 2, 
+                  "EXRAM" = 3 
+                }; 
+                ulong; 
+                ulong; 
+                enum { 
+                  "CODE" = 1, 
+                  "DATA" = 2, 
+                  "EXRAM" = 3 
+                }; 
+                ulong; 
+                ulong; 
+              }; 
+            }; 
+          }; 
+          "DP_BLOB" struct { 
+            ulong; 
+            ulong; 
+          }; 
+          "KP_BLOB" struct { 
+            ulong; 
+            enum { 
+              "INTERN"  = 0, 
+              "EXTERN"  = 1 
+            }; 
+            uint; 
+          }; 
+        }; 
+ 
+        /*********************************************************/ 
+        /*   ASAP1B_MCMESS     BlobVersion 1.02                  */ 
+        /*********************************************************/ 
+        "ASAP1B_MCMESS" taggedstruct { 
+          (block "SOURCE" struct { 
+            struct { 
+              char[100]; 
+              int; 
+              long; 
+            }; 
+            taggedstruct { 
+              "QP_BLOB" struct { 
+                enum { 
+                  "HANDSHAKE" = 0x00, 
+                  "ANGLE"     = 0x08, 
+                  "TIME"      = 0x0C 
+                }; 
+                uint; 
+              }; 
+            }; 
+          })*; 
+          block "TP_BLOB" struct { 
+            uint; 
+            taggedstruct { 
+              "KOMKEN" uint; 
+              "MCTGT" long; 
+              "MCINI" enum { 
+                "MASSE"  = 0, 
+                "KW2000" = 1 
+              }; 
+              "WFSIDLE0" uint; 
+              "WFSIDLE1" uint; 
+              "WFS5B" uint; 
+              "NOOFCYL" uint; 
+              "CYLCNAME" char[20]; 
+              "CYLSEQU" char[30]; 
+              "XRAMOF" uint; 
+              block "VS_DEF" (char[64])*; 
+              block "PSEUDO_ADR" (char[64])*;
+              block "CHECKSUM_PARAM" struct { 
+                ulong; 
+                taggedstruct { 
+                  "CHECKSUM_CALCULATION" enum { 
+                    "ACTIVE_PAGE", 
+                    "WORKING_PAGE" 
+                  }; 
+                }; 
+              }; 
+              (block "DEFINED_PAGES" struct { 
+                uint; 
+                char[101]; 
+                taggedunion { 
+                  "RAM" struct { 
+                    enum { 
+                      "RAM_INIT_BY_ECU", 
+                      "RAM_INIT_BY_TOOL" 
+                    }; 
+                    taggedstruct { 
+                      "DEFAULT"; 
+                    }; 
+                  }; 
+                  "ROM" taggedstruct { 
+                    "DEFAULT"; 
+                  }; 
+                  "FLASH" struct { 
+                    enum { 
+                      "NO_FLASH_BACK", 
+                      "AUTO_FLASH_BACK", 
+                      "FLASH_BACK" 
+                    }; 
+                    taggedstruct { 
+                      "DEFAULT"; 
+                    }; 
+                  }; 
+                  "EEPROM" struct { 
+                    enum { 
+                      "NO_FLASH_BACK", 
+                      "AUTO_FLASH_BACK", 
+                      "FLASH_BACK" 
+                    }; 
+                    taggedstruct { 
+                      "DEFAULT"; 
+                    }; 
+                  }; 
+                }; 
+              })*; 
+              "BYTE_ORDER" enum { 
+                "MSB_FIRST", 
+                "MSB_LAST" 
+              }; 
+              "THREE_BYTE_ADDRESSES"; 
+              "COPY_FLASH_TO_RAM_BY_COMMAND"; 
+            }; 
+          }; 
+          block "KP_BLOB" struct { 
+            long; 
+            enum { 
+              "INTERN", 
+              "EXTERN" 
+            }; 
+            uint; 
+            taggedstruct { 
+              "PSEUDO_ADR" uint; 
+              "VS_DEF" char[20]; 
+            }; 
+          }; 
+          "DP_BLOB" struct { 
+            ulong; 
+            ulong; 
+          }; 
+        }; 
+ 
+      }; 
+ 
+    /end A2ML 
+
