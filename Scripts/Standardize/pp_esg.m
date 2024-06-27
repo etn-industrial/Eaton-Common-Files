@@ -45,6 +45,9 @@ lst = find_system(H, 'LookUnderMasks', 'on', 'Selected', sel, 'BlockType', 'Inpo
 for i = 1:length(lst)
    set_param(char(lst(i)), 'BackgroundColor', 'orange');
    set_param(char(lst(i)),'ForegroundColor','black')
+   isBusElementPort=get_param(char(lst(i)),'IsBusElementPort');
+   if strcmp(isBusElementPort,'off')
+       %update port size for regular ports only.
    P = get_param(lst(i), 'Position');
    if iscell(P)
       P = P{1};
@@ -56,6 +59,9 @@ for i = 1:length(lst)
    P(2) = midpoint - 10;
    P(4) = midpoint + 10;
    set_param(char(lst(i)), 'Position', P)
+   else
+       %Do nothing , bus element ports have a unique size.
+   end
 end
 
 % Set all output ports to LIGHT BLUE, 20 x 20
@@ -63,6 +69,9 @@ lst = find_system(H, 'LookUnderMasks', 'on',  'Selected', sel, 'BlockType', 'Out
 for i = 1:length(lst)
    set_param(char(lst(i)), 'BackgroundColor', 'lightBlue');
    set_param(char(lst(i)),'ForegroundColor','black')
+   isBusElementPort=get_param(char(lst(i)),'IsBusElementPort');
+   if strcmp(isBusElementPort,'off')
+       %update port size for regular ports only.
    P = get_param(lst(i), 'Position');
    if iscell(P)
       P = P{1};
@@ -74,6 +83,9 @@ for i = 1:length(lst)
    P(2) = midpoint - 10;
    P(4) = midpoint + 10;
    set_param(char(lst(i)), 'Position', P)
+   else
+       %Do nothing , bus element ports have a unique size.
+   end
 end
 
 % Set all datastores to White, height 20

@@ -49,7 +49,7 @@ try
         add_param(bdroot,'BrowserShowLibraryLinks','on');
     end
 
-    lbl_all;
+    lbl_all; %Renaming Blocks
 
     %%%%%%%%%%%%
     % PROGRESS
@@ -60,7 +60,7 @@ try
     set_param(bdroot,'Location',[350 100 1350 850]);
     set_param(bdroot,'ZoomFactor','100');
     set_param(bdroot,'ModelBrowserVisibility','on');
-    set_param(bdroot,'ModelBrowserWidth',250);
+    %set_param(bdroot,'ModelBrowserWidth',250);
     lst = find_system(bdroot, 'BlockType','SubSystem');
     for i=1:length(lst)
         bptr = lst{i};
@@ -68,7 +68,7 @@ try
             set_param(bptr,'Location',[350 100 1350 850]);
             set_param(bptr,'ZoomFactor','100');
             set_param(bptr,'ModelBrowserVisibility','on');
-            set_param(bptr,'ModelBrowserWidth',250);
+            %set_param(bptr,'ModelBrowserWidth',250);
         catch
         end
     end
@@ -76,24 +76,24 @@ try
     %%%%%%%%%%%%
     % PROGRESS
     %%%%%%%%%%%%
-    waitbar(0.2, progress, 'Turning off ''SaturateOnIntegerOverflow''');
+    waitbar(0.2, progress, 'Turning on ''SaturateOnIntegerOverflow''');
     
     % Turn SaturateOnIntegerOverflow off ------------------------------------------
     lst = find_system(bdroot, 'Type', 'block', ...
-                         'SaturateOnIntegerOverflow', 'on');
+                         'SaturateOnIntegerOverflow', 'off');
     N = length(lst);
     if N > 0
-       disp('SaturateOnIntegerOverflow set to off for:');
+       disp('SaturateOnIntegerOverflow set to on for:');
     end
     for i = 1:N
        disp(lst{i});
-       set_param(lst{i}, 'SaturateOnIntegerOverflow', 'off');
+       set_param(lst{i}, 'SaturateOnIntegerOverflow', 'on');
     end
 
     %%%%%%%%%%%%
     % PROGRESS
     %%%%%%%%%%%%
-    waitbar(0.3, progress, 'Turning off ''ZeroCross''');
+    waitbar(0.25, progress, 'Turning off ''ZeroCross''');
     
     % Turn ZeroCross off ----------------------------------------------------------
     lst = find_system(bdroot, 'Type', 'block', ...
@@ -110,24 +110,43 @@ try
     %%%%%%%%%%%%
     % PROGRESS
     %%%%%%%%%%%%
+    waitbar(0.3, progress, 'Setting Logic & Relational blocks output as boolean');
+    
+    % Updating Logic & Relational blocks  ------------------------------------------
+    lst = find_system(bdroot, 'BlockType','Logic');
+    lst=cat(1,lst,find_system(bdroot, 'BlockType','RelationalOperator'));
+    N = length(lst);
+    if N > 0
+       disp('Setting output as boolean for:');
+    end
+    for i = 1:N
+       if strcmp(get_param(lst{i}, 'OutDataTypeStr'),'boolean')
+           %ignore block
+       else
+          disp(lst{i});
+          set_param(lst{i}, 'OutDataTypeStr', 'boolean');
+       end
+    end
+
+    %%%%%%%%%%%%
+    % PROGRESS
+    %%%%%%%%%%%%
     waitbar(0.35, progress, 'Re-Enabling Disabled Links');
     
     % Re-enable disabled links-----------------------------------------------------
-    %if findstr(bdroot,'INMGMTEMCURR')==[]
-        % Re-enable disabled links-------------------------------------------------
-        lst = find_system(bdroot, 'linkstatus', 'inactive');
-        N = length(lst);
-        if N > 0
-           disp('Re-enabling links for:');
+    % Re-enable disabled links-------------------------------------------------
+    lst = find_system(bdroot, 'linkstatus', 'inactive');
+    N = length(lst);
+    if N > 0
+        disp('Re-enabling links for:');
+    end
+    for i = 1:N
+        disp(lst{i});
+        r = input('Do you want to restore the link for the block above (Y/N) ? ','s');
+        if r(1)=='Y' || r(1)=='y'
+            set_param(lst{i}, 'linkstatus', 'restore');
         end
-        for i = 1:N
-           disp(lst{i});
-           r = input('Do you want to restore the link for the block above (Y/N) ? ','s');
-           if r(1)=='Y' || r(1)=='y'
-               set_param(lst{i}, 'linkstatus', 'restore');
-           end
-        end
-    %end
+    end
 
     %%%%%%%%%%%%
     % PROGRESS
@@ -191,9 +210,9 @@ try
     %%%%%%%%%%%%
     % PROGRESS
     %%%%%%%%%%%%
-%     waitbar(0.8, progress, 'Renaming Outports');
+     waitbar(0.8, progress, 'Renaming Outports');
 %     
-%     RenameOutports;
+     RenameOutports;
 
     %%%%%%%%%%%%
     % PROGRESS
